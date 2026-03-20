@@ -80,7 +80,7 @@ store = "rocksdb"
 # ── ACME / Let's Encrypt (auto TLS for mail.tutainbox.com)
 [acme."letsencrypt"]
 directory = "https://acme-v02.api.letsencrypt.org/directory"
-challenge = "tls-alpn-01"
+challenge = "http-01"
 contact = ["postmaster@tutainbox.com"]
 domains = ["mail.tutainbox.com"]
 default = true
