@@ -1,11 +1,11 @@
 #############################################
 # Stalwart Configuration File
-# Pre-configured for mail.tutainbox.com
+# Pre-configured for mail.neurapool.xyz
 # Integrates with Zencore Wizard dashboard
 #############################################
 
 [server]
-hostname = "mail.tutainbox.com"
+hostname = "mail.neurapool.xyz"
 
 # ── SMTP listeners ──────────────────────────────────────
 [server.listener."smtp"]
@@ -77,12 +77,12 @@ compression = "lz4"
 type = "internal"
 store = "rocksdb"
 
-# ── ACME / Let's Encrypt (auto TLS for mail.tutainbox.com)
+# ── ACME / Let's Encrypt (auto TLS for mail.neurapool.xyz)
 [acme."letsencrypt"]
 directory = "https://acme-v02.api.letsencrypt.org/directory"
 challenge = "http-01"
-contact = ["postmaster@tutainbox.com"]
-domains = ["mail.tutainbox.com"]
+contact = ["postmaster@neurapool.xyz"]
+domains = ["mail.neurapool.xyz"]
 default = true
 cache-path = "%{env:STALWART_PATH}%/acme"
 
