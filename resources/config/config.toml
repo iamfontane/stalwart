@@ -1,13 +1,13 @@
 #############################################
 # Stalwart Configuration File
-# Pre-configured for mail.neurapool.xyz
+# Pre-configured for mail.neurapool.com
 # Integrates with Zencore Wizard dashboard
 #############################################
 
 [server]
-hostname = "mail.neurapool.xyz"
+hostname = "mail.neurapool.com"
 
-# ── SMTP listeners ──────────────────────────────────────
+# ── SMTP listeners ───────────────────────────────────────
 [server.listener."smtp"]
 bind = ["[::]:25"]
 protocol = "smtp"
@@ -31,13 +31,13 @@ bind = ["[::]:993"]
 protocol = "imap"
 tls.implicit = true
 
-# ── POP3 (optional) ──────────────────────────────────────
-[server.listener.pop3]
-bind = "[::]:110"
+# ── POP3 ─────────────────────────────────────────────────
+[server.listener."pop3"]
+bind = ["[::]:110"]
 protocol = "pop3"
 
-[server.listener.pop3s]
-bind = "[::]:995"
+[server.listener."pop3s"]
+bind = ["[::]:995"]
 protocol = "pop3"
 tls.implicit = true
 
@@ -46,56 +46,72 @@ tls.implicit = true
 bind = ["[::]:4190"]
 protocol = "managesieve"
 
-# ── HTTPS admin + webmail (TLS via ACME) ─────────────────
+# ── HTTPS admin + ACME tls-alpn-01 challenge ─────────────
+# tls-alpn-01 uses this port for Let's Encrypt verification.
+# No port 80 required — cert is obtained purely over TLS on 443.
 [server.listener."https"]
 protocol = "http"
 bind = ["[::]:443"]
 tls.implicit = true
 
-# ── HTTP admin (no TLS — for Zencore internal API calls) ──
-# Zencore app calls this as http://stalwart:8080 inside Docker network
+# ── HTTP (plain) on port 80 ──────────────────────────────
+# Required for ACME http-01 fallback. Stalwart MUST listen here
+# so Let's Encrypt can reach /.well-known/acme-challenge/<token>.
+[server.listener."acme-http"]
+protocol = "http"
+bind = ["[::]:80"]
+tls.implicit = false
+
+# ── HTTP admin API (no TLS — Zencore internal calls only) ─
+# Zencore calls http://localhost:8080 from the same VPS.
+# Block port 8080 from the internet in your firewall.
 [server.listener."http"]
 protocol = "http"
 bind = ["[::]:8080"]
 tls.implicit = false
 
-# ── Storage (RocksDB — fast, embedded, no external DB) ───
+# ── Storage (RocksDB — embedded, no external DB needed) ──
 [storage]
-data = "rocksdb"
-fts = "rocksdb"
-blob = "rocksdb"
-lookup = "rocksdb"
+data      = "rocksdb"
+fts       = "rocksdb"
+blob      = "rocksdb"
+lookup    = "rocksdb"
 directory = "internal"
 
 [store."rocksdb"]
-type = "rocksdb"
-path = "%{env:STALWART_PATH}%/data"
+type        = "rocksdb"
+path        = "%{env:STALWART_PATH}%/data"
 compression = "lz4"
 
-# ── Internal directory (accounts stored in RocksDB) ──────
+# ── Internal directory (accounts live in RocksDB) ────────
 [directory."internal"]
-type = "internal"
+type  = "internal"
 store = "rocksdb"
 
-# ── ACME / Let's Encrypt (auto TLS for mail.neurapool.xyz)
+# ── ACME / Let's Encrypt ─────────────────────────────────
+# Uses tls-alpn-01: Let's Encrypt verifies ownership over port 443.
+# This avoids needing port 80 open externally.
+# On first boot with a clean database these values are authoritative.
 [acme."letsencrypt"]
-directory = "https://acme-v02.api.letsencrypt.org/directory"
-challenge = "http-01"
-contact = ["postmaster@neurapool.xyz"]
-domains = ["mail.neurapool.xyz"]
-default = true
+directory  = "https://acme-v02.api.letsencrypt.org/directory"
+challenge  = "tls-alpn-01"
+contact    = ["postmaster@neurapool.com"]
+domains    = ["mail.neurapool.com"]
+default    = true
 cache-path = "%{env:STALWART_PATH}%/acme"
 
 # ── Logging ──────────────────────────────────────────────
+# Level "warn" suppresses the high-volume INFO "Blocked IP address" spam
+# from internet scanners hitting port 993. Warnings and errors are still logged.
 [tracer."stdout"]
-type = "stdout"
-level = "info"
-ansi = false
+type   = "stdout"
+level  = "warn"
+ansi   = false
 enable = true
 
 # ── Fallback admin (used by Zencore API) ─────────────────
 # Username: admin
-# Password: set via STALWART_ADMIN_SECRET env var in docker-compose
+# Password: injected from STALWART_ADMIN_SECRET in .env
 [authentication.fallback-admin]
-user = "admin"
+user   = "admin"
 secret = "%{env:STALWART_ADMIN_SECRET}%"
