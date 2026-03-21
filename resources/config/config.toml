@@ -1,0 +1,101 @@
+#############################################
+# Stalwart Configuration File
+# Pre-configured for mail.tutainbox.com
+# Integrates with Zencore Wizard dashboard
+#############################################
+
+[server]
+hostname = "mail.tutainbox.com"
+
+# ── SMTP listeners ──────────────────────────────────────
+[server.listener."smtp"]
+bind = ["[::]:25"]
+protocol = "smtp"
+
+[server.listener."submission"]
+bind = ["[::]:587"]
+protocol = "smtp"
+
+[server.listener."submissions"]
+bind = ["[::]:465"]
+protocol = "smtp"
+tls.implicit = true
+
+# ── IMAP listeners ───────────────────────────────────────
+[server.listener."imap"]
+bind = ["[::]:143"]
+protocol = "imap"
+
+[server.listener."imaptls"]
+bind = ["[::]:993"]
+protocol = "imap"
+tls.implicit = true
+
+# ── POP3 (optional) ──────────────────────────────────────
+[server.listener.pop3]
+bind = "[::]:110"
+protocol = "pop3"
+
+[server.listener.pop3s]
+bind = "[::]:995"
+protocol = "pop3"
+tls.implicit = true
+
+# ── Sieve (filter scripts) ───────────────────────────────
+[server.listener."sieve"]
+bind = ["[::]:4190"]
+protocol = "managesieve"
+
+# ── HTTPS admin + webmail (TLS via ACME) ─────────────────
+[server.listener."https"]
+protocol = "http"
+bind = ["[::]:443"]
+tls.implicit = true
+
+# ── HTTP admin (no TLS — for Zencore internal API calls) ──
+# Zencore app calls this as http://stalwart:8080 inside Docker network
+[server.listener."http"]
+protocol = "http"
+bind = ["[::]:8080"]
+tls.implicit = false
+
+# ── Storage (RocksDB — fast, embedded, no external DB) ───
+[storage]
+data = "rocksdb"
+fts = "rocksdb"
+blob = "rocksdb"
+lookup = "rocksdb"
+directory = "internal"
+
+[store."rocksdb"]
+type = "rocksdb"
+path = "%{env:STALWART_PATH}%/data"
+compression = "lz4"
+
+# ── Internal directory (accounts stored in RocksDB) ──────
+[directory."internal"]
+type = "internal"
+store = "rocksdb"
+
+# ── ACME / Let's Encrypt (auto TLS for mail.tutainbox.com)
+[acme."letsencrypt"]
+directory = "https://acme-v02.api.letsencrypt.org/directory"
+challenge = "tls-alpn-01"
+contact = ["postmaster@tutainbox.com"]
+domains = ["mail.tutainbox.com"]
+default = true
+cache-path = "%{env:STALWART_PATH}%/acme"
+
+# ── Logging ──────────────────────────────────────────────
+[tracer."stdout"]
+type = "stdout"
+level = "info"
+ansi = false
+enable = true
+
+# ── Fallback admin (used by Zencore API) ─────────────────
+# Username: admin
+# Password: set via STALWART_ADMIN_SECRET env var in docker-compose
+[authentication.fallback-admin]
+user = "admin"
+secret = "%{env:STALWART_ADMIN_SECRET}%"

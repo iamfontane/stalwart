@@ -1,0 +1,52 @@
+version: "3.8"
+
+services:
+  stalwart:
+    image: stalwartlabs/stalwart:latest
+    container_name: stalwart
+    restart: unless-stopped
+
+    environment:
+      # Path inside container where Stalwart stores all data
+      - STALWART_PATH=/opt/stalwart
+      # Admin password — Zencore reads this from config.json (stalwart_admin_pass)
+      # Change this before deploying!
+      - STALWART_ADMIN_SECRET=${STALWART_ADMIN_SECRET:-ChangeMe123!}
+
+    ports:
+      - "25:25"       # SMTP (inbound)
+      - "465:465"     # SMTPS (TLS)
+      - "587:587"     # SMTP submission (STARTTLS)
+      - "143:143"     # IMAP
+      - "993:993"     # IMAPS (TLS)
+      - "110:110"     # POP3
+      - "995:995"     # POP3S (TLS)
+      - "4190:4190"   # ManageSieve
+      - "443:443"     # HTTPS admin UI + ACME TLS challenge
+      - "80:80"       # HTTP (ACME http-01 fallback, redirect)
+      - "8080:8080"   # HTTP admin API — used by Zencore (no TLS, internal)
+
+    volumes:
+      # Persistent data (emails, accounts, indices, ACME certs) — survives restarts
+      - stalwart-data:/opt/stalwart
+      # Pre-configured etc/ directory — Stalwart reads config.toml from here on startup.
+      # Mounting the directory (not just the file) ensures /opt/stalwart/etc/ exists
+      # on first boot so Stalwart skips --init and uses our custom config immediately.
+      - ./resources/config:/opt/stalwart/etc:ro
+
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/healthz || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
+
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+volumes:
+  stalwart-data:
+    name: stalwart-data
